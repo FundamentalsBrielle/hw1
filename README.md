@@ -1,3 +1,2 @@
 # hw1
-hw1:
-Hw.1.nb.html
+hw1: https://fundamentalsbrielle.github.io/hw1/
