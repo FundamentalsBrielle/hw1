@@ -1,0 +1,139 @@
+---
+title: "hw1"
+output: html_notebook
+---
+
+# =========================
+# START FRESH
+# =========================
+
+rm(list = ls()) 
+# this removes all existing objects from the R environment so we start with a clean workspace
+
+
+# =========================
+# GET THE DATA
+# =========================
+
+linkGit = "https://github.com/DACSS-Fundamentals/overview/raw/refs/heads/main/FSI-2023-DOWNLOAD.xlsx" # stores the URL of the Excel file that contains the data
+
+# this loads the rio package, which allows us to easily import Excel files
+library(rio) # loads the rio package, which allows us to easily import Excel files
+
+# this imports the Excel file directly from the URL and store it as an object called 'fragility23'
+fragility23 = rio::import(file = linkGit)
+
+
+# =========================
+# EXPLORATORY COMMANDS
+# =========================
+
+# this displays the names of all columns in the dataset
+names(x = fragility23)
+
+# this checks the structure of the dataset, including data types for each column
+# this helps verify that numeric variables were read correctly
+str(object = fragility23)
+
+# this displays the first 10 rows of the dataset to inspect the data
+head(x = fragility23, 10)
+
+# this displays the last 10 rows of the dataset
+tail(fragility23, 10)
+
+
+# =========================
+# TRANSFORMATIVE COMMANDS
+# =========================
+
+# this extracts only the columns related to demographic pressure, state legitimacy,
+# and economic inequality (this line just previews the selection)
+fragility23[, c('S1: Demographic Pressures',
+                'P1: State Legitimacy',
+                'E2: Economic Inequality')]
+
+# this identifies column names that contain Country, S1, P1, E2, or Total
+# this is used to make sure we select the correct variables
+grep(pattern = "Country|S1|P1|E2|Total",
+     x = names(fragility23),
+     fixed = FALSE,
+     value = TRUE)
+
+# this stores the matching column names into an object called 'keep'
+keep = grep("Country|S1|P1|E2|Total",
+            names(fragility23),
+            fixed = FALSE,
+            value = TRUE)
+
+# this creates a subset of the dataset that only includes the selected columns
+frag23_sub = fragility23[, keep]
+
+# this renames selected columns so they have shorter, cleaner names
+names(frag23_sub)[3:5] = c("S1", "E2", "P1")
+
+
+# =========================
+# SOME COMPUTATIONS
+# =========================
+
+# this displays the top 10 countries with the highest values of economic inequality (E2)
+tail(frag23_sub[order(x = -frag23_sub$E2), ], 10)
+
+# this displays only the country names for the top 10 highest E2 values
+tail(frag23_sub[order(x = -frag23_sub$E2), 'Country'], 10)
+
+# this provides summary statistics (min, max, mean, quartiles) for each variable
+summary(object = frag23_sub)
+
+# this calculates the value of the third quartile (75th percentile) of the Total score
+q3_Total = quantile(x = frag23_sub$Total,
+                    probs = 0.75,
+                    na.rm = TRUE)
+
+# this computes correlations between S1, E2, and P1
+# excludes Country and Total columns
+cor(x = frag23_sub[, -c(1, 2)])
+
+# this loads the corrtable package to calculate correlations with significance levels
+library(corrtable)
+
+# this displays a correlation matrix with statistical significance information
+corrtable::correlation_matrix(df = frag23_sub[, -c(1, 2)])
+
+# this runs a linear regression predicting demographic pressures (S1)
+# using state legitimacy (P1) and economic inequality (E2)
+model <- lm(S1 ~ P1 + E2, data = frag23_sub)
+
+# this displays detailed regression output
+summary(model)
+
+
+# =========================
+# SOME PLOTTING
+# =========================
+
+# this creates a histogram to visualize the distribution of the P1 variable
+hist(x = frag23_sub$P1)
+
+# this creates a scatterplot to visualize the relationship between S1 and E2
+plot(x = frag23_sub$S1,
+     y = frag23_sub$E2)
+
+# this identifies which countries fall into the worst quartile of Total scores
+frag23_sub$worstQt = frag23_sub$Total >= q3_Total
+
+# this plots S1 vs E2 and color points based on whether the country is in the worst quartile
+plot(frag23_sub$S1,
+     frag23_sub$E2,
+     pch = 20,
+     col = as.factor(frag23_sub$worstQt))
+
+# this loads sjPlot to visualize regression results
+library(sjPlot)
+
+# this generates a visual summary of the regression model
+plot_models(model)
+
+
+
+
